@@ -44,6 +44,12 @@ function createRepoCard(repo) {
 // Helper function to clear existing repo cards
 function clearExistingRepoCards(profileContainerElement) {
   const existingCards = profileContainerElement.querySelectorAll(".repo-card");
+
+  const repoHeader = profileContainerElement.querySelector(".repo-header");
+  if (repoHeader) {
+    repoHeader.remove();
+  }
+
   existingCards.forEach((card) => card.remove());
 }
 
@@ -58,19 +64,40 @@ export function displayUserRepos(userRepos, profileContainerElement) {
     return;
   }
 
-  clearExistingRepoCards(profileContainerElement);
+  // Create repos section
+  let reposSection = document.createElement("div");
+  reposSection.classList.add("repos-section");
 
   if (userRepos.length === 0) {
     const noReposMsg = document.createElement("p");
     noReposMsg.textContent = "This user has no public repositories.";
-    profileContainerElement.appendChild(noReposMsg);
-    return;
+    reposSection.appendChild(noReposMsg);
+  } else {
+    let repoHeader = document.createElement("h1");
+    repoHeader.classList.add("repo-header");
+    repoHeader.innerText = "Recently Contributed Repositories";
+
+    let repoCardGridElement = document.createElement("div");
+    repoCardGridElement.classList.add("repo-card-grid");
+
+    userRepos.forEach((repo) => {
+      const repoCard = createRepoCard(repo);
+      repoCardGridElement.appendChild(repoCard);
+    });
+
+    reposSection.appendChild(repoHeader);
+    reposSection.appendChild(repoCardGridElement);
   }
 
-  userRepos.forEach((repo) => {
-    const repoCard = createRepoCard(repo);
-    profileContainerElement.appendChild(repoCard);
-  });
+  // Remove any existing repos section
+  const existingReposSection =
+    profileContainerElement.querySelector(".repos-section");
+  if (existingReposSection) {
+    existingReposSection.remove();
+  }
+
+  // Add the new repos section
+  profileContainerElement.appendChild(reposSection);
 }
 
 // This function creates and displays the user's profile photo
@@ -107,50 +134,60 @@ function createUsersNameHeadingElement(
   userRealName.innerText = name || userName;
 
   const profilePic = profileContainerElement.querySelector(".profile-picture");
-  if (profilePic && profilePic.nextSibling) {
-    profileContainerElement.insertBefore(userRealName, profilePic.nextSibling);
-  } else if (profilePic) {
-    profileContainerElement.appendChild(userRealName);
-  } else {
-    profileContainerElement.prepend(userRealName);
-  }
+
+  let picNameDiv = document.createElement("div");
+  picNameDiv.classList.add("pic-name-container");
+  picNameDiv.appendChild(profilePic);
+  picNameDiv.appendChild(userRealName);
+
+  profileContainerElement.appendChild(picNameDiv);
 }
 
 // Main function to update the profile header section (photo and name)
 // Ensure elements are added in a consistent order, e.g., photo first, then name.
 export function displayProfileHeader(userData, profileContainerElement) {
   if (!userData) return;
-  createUserProfilePhotoElement(userData.avatar_url, profileContainerElement);
-  createUsersNameHeadingElement(
-    userData.name,
-    userData.login,
-    profileContainerElement
+
+  // First remove any existing pic-name-container
+  const existingPicNameContainer = profileContainerElement.querySelector(
+    ".pic-name-container"
+  );
+  if (existingPicNameContainer) {
+    existingPicNameContainer.remove();
+  }
+
+  // Create new container for photo and name
+  let picNameDiv = document.createElement("div");
+  picNameDiv.classList.add("pic-name-container");
+
+  // Create and add photo
+  const imgElement = document.createElement("img");
+  imgElement.classList.add("profile-picture");
+  imgElement.width = "120";
+  imgElement.height = "120";
+  imgElement.src = userData.avatar_url;
+  imgElement.alt = "User profile picture";
+
+  // Create and add name
+  let userRealName = document.createElement("h3");
+  userRealName.classList.add("user-real-name");
+  userRealName.innerText = userData.name || userData.login;
+
+  // Add elements to container
+  picNameDiv.appendChild(imgElement);
+  picNameDiv.appendChild(userRealName);
+
+  // Add container to the beginning of profileContainerElement
+  profileContainerElement.insertBefore(
+    picNameDiv,
+    profileContainerElement.firstChild
   );
 }
 
 // Function to clear all dynamic content from profile container
 export function clearProfileContainer(profileContainerElement) {
-  const photo = profileContainerElement.querySelector(".profile-picture");
-  if (photo) photo.remove();
-
-  const nameEl = profileContainerElement.querySelector(".user-real-name");
-  if (nameEl) nameEl.remove();
-
-  clearExistingRepoCards(profileContainerElement);
-
-  const errorMessages =
-    profileContainerElement.querySelectorAll(".error-message");
-  errorMessages.forEach((msg) => msg.remove());
-
-  const noReposMessages = profileContainerElement.querySelectorAll("p");
-  noReposMessages.forEach((msg) => {
-    if (
-      msg.textContent === "This user has no public repositories." ||
-      msg.textContent === "Could not load repositories."
-    ) {
-      msg.remove();
-    }
-  });
+  // Clear all contents
+  profileContainerElement.innerHTML = "";
 }
 
 // Function to display an error message in the profile container
