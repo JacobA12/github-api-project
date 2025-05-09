@@ -45,22 +45,58 @@ async function pullUserRepos(reposUrl) {
 
 // this function creates a maximum of 5 repo cards based upon which are most recently contributed to
 function createRepoCardGrid(userRepos) {
-  console.log(userRepos);
-  userRepos.forEach((repo) => {
-    const { name, updated_at, html_url, language } = repo;
-    const formattedDate = new Date(updated_at).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    console.log(
-      `Repo Name: ${name}\nLast Updated: ${formattedDate}\nURL: ${html_url}\nlanguage: ${language}`
-    );
-  });
+  if (!Array.isArray(userRepos)) {
+    console.error("Expected array of repositories");
+    return;
+  }
+
+  clearExistingCards();
+  const cards = createCards(userRepos);
+  renderCards(cards);
 }
 
 // helper function to create the Repo Card
-function createRepoCard(repo) {}
+function createRepoCard(repo) {
+  const { name, updated_at, html_url, language } = repo;
+  const formattedDate = new Date(updated_at).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  let card = document.createElement("div");
+  card.classList.add("repo-card");
+  card.style.backgroundColor = "white";
+  card.style.length = "500px";
+  card.style.width = "500px";
+
+  let title = document.createElement("h1");
+  card.classList.add("repo-card-title");
+  title.innerText = name;
+  card.appendChild(title);
+
+  let date = document.createElement("p");
+  card.appendChild(date);
+  date.innerText = formattedDate;
+  card.classList.add("repo-card-date");
+
+  let link = document.createElement("a");
+  link.innerText = html_url;
+  card.appendChild(link);
+  card.classList.add("repo-card-link");
+
+  let languageP = document.createElement("p");
+  languageP.innerText = language;
+  card.appendChild(languageP);
+  card.classList.add("repo-card-language");
+
+  return card;
+}
+
+// TODO: Clear Cards Function
+function clearExistingCards(){
+  
+}
 
 // This function creates a new header element to display the user's name
 function createUsersNameElement(name = "", userName = "") {
