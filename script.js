@@ -1,149 +1,60 @@
-const URL = "https://api.github.com/";
+import { pullUserInfo, pullUserRepos } from "./api.js";
+import {
+  displayProfileHeader,
+  displayUserRepos,
+  clearProfileContainer,
+  displayError,
+} from "./ui.js";
 
 let usernameInput = document.getElementById("usernameInput");
 let submitButton = document.querySelector(".submit-button");
 let profileContainer = document.querySelector(".profile-container");
-let currUserData;
-
-// This function fetches the users info object from GitHub REST API
-async function pullUserInfo(username) {
-  try {
-    const response = await fetch(`${URL}users/${username}`);
-    console.table(response);
-
-    if (!response.ok) {
-      throw new Error(`User not found: ${response.status}`);
-    }
-
-    const userData = await response.json();
-    console.table(userData);
-    return userData;
-  } catch (error) {
-    console.error(`Username not found error: ${error}`);
-    return null;
-  }
-}
-
-// This function fetches the user's repos
-async function pullUserRepos(reposUrl) {
-  try {
-    const response = await fetch(`${reposUrl}?sort=updated&per_page=5`);
-    console.table(response);
-
-    if (!response.ok) {
-      throw new Error(`Repos not found: ${response.status}`);
-    }
-
-    const userRepos = await response.json();
-    console.table(userRepos);
-    return userRepos;
-  } catch (error) {
-    console.error(`Error detected: ${error}`);
-    return null;
-  }
-}
-
-// this function creates a maximum of 5 repo cards based upon which are most recently contributed to
-function createRepoCardGrid(userRepos) {
-  if (!Array.isArray(userRepos)) {
-    console.error("Expected array of repositories");
-    return;
-  }
-
-  clearExistingCards();
-  const cards = createCards(userRepos);
-  renderCards(cards);
-}
-
-// helper function to create the Repo Card
-function createRepoCard(repo) {
-  const { name, updated_at, html_url, language } = repo;
-  const formattedDate = new Date(updated_at).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  let card = document.createElement("div");
-  card.classList.add("repo-card");
-  card.style.backgroundColor = "white";
-  card.style.length = "500px";
-  card.style.width = "500px";
-
-  let title = document.createElement("h1");
-  card.classList.add("repo-card-title");
-  title.innerText = name;
-  card.appendChild(title);
-
-  let date = document.createElement("p");
-  card.appendChild(date);
-  date.innerText = formattedDate;
-  card.classList.add("repo-card-date");
-
-  let link = document.createElement("a");
-  link.innerText = html_url;
-  card.appendChild(link);
-  card.classList.add("repo-card-link");
-
-  let languageP = document.createElement("p");
-  languageP.innerText = language;
-  card.appendChild(languageP);
-  card.classList.add("repo-card-language");
-
-  return card;
-}
-
-// TODO: Clear Cards Function
-function clearExistingCards(){
-  
-}
-
-// This function creates a new header element to display the user's name
-function createUsersNameElement(name = "", userName = "") {
-  let userRealName = document.createElement("h3");
-  userRealName.classList.add("user-real-name");
-  userRealName.innerText = name || userName;
-  console.log(`Username used is ${userRealName.innerText}`);
-  profileContainer.appendChild(userRealName);
-}
-
-// This function creates user profile photo element
-function createProfilePhotoElement(avatarUrl) {
-  const imgElement = document.createElement("img");
-  imgElement.classList.add("profile-picture");
-  imgElement.width = "120";
-  imgElement.height = "120";
-  imgElement.src = avatarUrl;
-
-  profileContainer.appendChild(imgElement);
-  console.log(`Done creating User Profile Picture Element`);
-  console.log(imgElement);
-}
 
 // This function is handling the submit button after entering the username
 async function handleSubmit() {
   const username = usernameInput.value.trim();
   usernameInput.value = "";
 
-  if (!username) return;
+  if (!username) {
+    displayError("Please enter a GitHub username.", profileContainer);
+    return;
+  }
 
   console.log("Fetching info for:", username);
-  currUserData = await pullUserInfo(username);
+  clearProfileContainer(profileContainer);
 
-  if (currUserData) {
-    console.log("User login:", currUserData.login);
-    const { avatar_url, bio, html_url, following_url, repos_url, name, login } =
-      currUserData;
+  const userData = await pullUserInfo(username);
 
-    createProfilePhotoElement(avatar_url);
-    const repos = await pullUserRepos(repos_url);
-    createRepoCardGrid(repos);
+  if (userData) {
+    console.log("User login:", userData.login);
+    displayProfileHeader(userData, profileContainer);
 
-    createUsersNameElement(name, login);
+    const repos = await pullUserRepos(userData.repos_url);
+    if (repos) {
+      displayUserRepos(repos, profileContainer);
+    } else {
+      if (repos === null) {
+        const repoError = document.createElement("p");
+        repoError.classList.add("error-message");
+        repoError.textContent = "Failed to load repositories for this user.";
+        profileContainer.appendChild(repoError);
+      }
+    }
   } else {
-    console.error("Unable to pull user data");
-    return;
+    console.error("Unable to pull user data for:", username);
+    displayError(
+      `User "${username}" not found or an error occurred.`,
+      profileContainer
+    );
   }
 }
 
 submitButton.addEventListener("click", handleSubmit);
+
+// Allows user to press enter instead of clicking button
+usernameInput.addEventListener("keypress", function (event) {
+  if (event.key === "Enter") {
+    event.preventDefault(); // Prevent default form submission if it's in a form
+    handleSubmit();
+  }
+});
