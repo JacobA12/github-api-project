@@ -5,7 +5,7 @@ let submitButton = document.querySelector(".submit-button");
 let profileContainer = document.querySelector(".profile-container");
 let currUserData;
 
-// Talks to the GitHub API and gets the JSON object that represents the Username submitted
+// This function fetches the users info object from GitHub REST API
 async function pullUserInfo(username) {
   try {
     const response = await fetch(`${URL}users/${username}`);
@@ -24,9 +24,42 @@ async function pullUserInfo(username) {
   }
 }
 
-// Pulls user profile picture, creates an <img> element and adds it to the DOM
-async function createProfilePhotoElement(avatarUrl) {
-  console.log("Creating User Profile Picture Element");
+// This function fetches the user's repos
+async function pullUserRepos(reposUrl) {
+  try {
+    const response = await fetch(reposUrl);
+    console.table(response);
+
+    if (!response.ok) {
+      throw new Error(`Repos not found: ${response.status}`);
+    }
+
+    const userRepos = await response.json();
+    console.table(userRepos);
+    return userRepos;
+  } catch (error) {
+    console.error(`Error detected: ${error}`);
+    return null;
+  }
+}
+
+// this function creates a maximum of 5 repo cards based upon which are most recently contributed to
+function createRepoCardGrid(userRepos) {}
+
+// helper function to create the Repo Card
+function createRepoCard(repo) {}
+
+// This function creates a new header element to display the user's name
+function createUsersNameElement(name = "", userName = "") {
+  let userRealName = document.createElement("h3");
+  userRealName.classList.add("user-real-name");
+  userRealName.innerText = name || userName;
+  console.log(`Username used is ${userRealName.innerText}`);
+  profileContainer.appendChild(userRealName);
+}
+
+// This function creates user profile photo element
+function createProfilePhotoElement(avatarUrl) {
   const imgElement = document.createElement("img");
   imgElement.classList.add("profile-picture");
   imgElement.width = "120";
@@ -36,15 +69,6 @@ async function createProfilePhotoElement(avatarUrl) {
   profileContainer.appendChild(imgElement);
   console.log(`Done creating User Profile Picture Element`);
   console.log(imgElement);
-}
-
-// This function creates a new header element to display the user's name
-function createUsersNameElement(name = "", userName = "") {
-  let userRealName = document.createElement("h3");
-  userRealName.classList.add("user-real-name");
-  userRealName.innerText = name || userName;
-  console.log(`Username used is ${userRealName.innerText}`);
-  profileContainer.appendChild(userRealName);
 }
 
 // This function is handling the submit button after entering the username
@@ -62,7 +86,9 @@ async function handleSubmit() {
     const { avatar_url, bio, html_url, following_url, repos_url, name, login } =
       currUserData;
 
-    await createProfilePhotoElement(avatar_url);
+    createProfilePhotoElement(avatar_url);
+    await pullUserRepos(repos_url);
+
     createUsersNameElement(name, login);
   } else {
     console.error("Unable to pull user data");
