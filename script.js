@@ -27,7 +27,7 @@ async function pullUserInfo(username) {
 // This function fetches the user's repos
 async function pullUserRepos(reposUrl) {
   try {
-    const response = await fetch(reposUrl);
+    const response = await fetch(`${reposUrl}?sort=updated&per_page=5`);
     console.table(response);
 
     if (!response.ok) {
@@ -44,7 +44,20 @@ async function pullUserRepos(reposUrl) {
 }
 
 // this function creates a maximum of 5 repo cards based upon which are most recently contributed to
-function createRepoCardGrid(userRepos) {}
+function createRepoCardGrid(userRepos) {
+  console.log(userRepos);
+  userRepos.forEach((repo) => {
+    const { name, updated_at, html_url, language } = repo;
+    const formattedDate = new Date(updated_at).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    console.log(
+      `Repo Name: ${name}\nLast Updated: ${formattedDate}\nURL: ${html_url}\nlanguage: ${language}`
+    );
+  });
+}
 
 // helper function to create the Repo Card
 function createRepoCard(repo) {}
@@ -87,7 +100,8 @@ async function handleSubmit() {
       currUserData;
 
     createProfilePhotoElement(avatar_url);
-    await pullUserRepos(repos_url);
+    const repos = await pullUserRepos(repos_url);
+    createRepoCardGrid(repos);
 
     createUsersNameElement(name, login);
   } else {
